@@ -23,10 +23,9 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # CORS - Allow Vercel frontend and localhost for development
-    # Set ALLOWED_ORIGINS in environment to override these defaults
+    # Set ALLOWED_ORIGINS in environment as comma-separated string
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://vercel.app,https://*.vercel.app"
 
-    @property
     def get_allowed_origins(self) -> List[str]:
         """Parse comma-separated origins from environment variable"""
         if isinstance(self.ALLOWED_ORIGINS, str):

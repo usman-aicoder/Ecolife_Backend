@@ -30,7 +30,14 @@
       "Bash(git push:*)",
       "Bash(heroku git:remote:*)",
       "Bash(heroku apps:*)",
-      "Bash(heroku logs:*)"
+      "Bash(heroku logs:*)",
+      "Bash(heroku pg:reset:*)",
+      "Bash(heroku open:*)",
+      "Bash(heroku config:set:*)",
+      "Bash(heroku config:*)",
+      "Bash(heroku config:unset:*)",
+      "Bash(heroku config:get:*)",
+      "Bash(heroku ps:*)"
     ],
     "deny": [],
     "ask": []
