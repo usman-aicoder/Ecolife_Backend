@@ -5,7 +5,7 @@ FastAPI application for optimizing diet and habits for better health and lower c
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
+from app.config import settings, get_allowed_origins
 from app.routes import auth, onboarding, dashboard, analytics, meal_plan, meal_consumption, activity
 
 # Initialize FastAPI app
@@ -20,7 +20,7 @@ app = FastAPI(
 # Configure CORS for Vercel frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_allowed_origins(),
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

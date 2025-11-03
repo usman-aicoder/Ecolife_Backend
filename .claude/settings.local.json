@@ -37,7 +37,9 @@
       "Bash(heroku config:*)",
       "Bash(heroku config:unset:*)",
       "Bash(heroku config:get:*)",
-      "Bash(heroku ps:*)"
+      "Bash(heroku ps:*)",
+      "Bash(heroku releases:*)",
+      "Bash(heroku restart:*)"
     ],
     "deny": [],
     "ask": []

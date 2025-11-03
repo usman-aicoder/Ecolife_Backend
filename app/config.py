@@ -24,13 +24,7 @@ class Settings(BaseSettings):
 
     # CORS - Allow Vercel frontend and localhost for development
     # Set ALLOWED_ORIGINS in environment as comma-separated string
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://vercel.app,https://*.vercel.app"
-
-    def get_allowed_origins(self) -> List[str]:
-        """Parse comma-separated origins from environment variable"""
-        if isinstance(self.ALLOWED_ORIGINS, str):
-            return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
-        return self.ALLOWED_ORIGINS
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://eco-life-frontend-4pmarqsu8-usmans-projects-6718d0f2.vercel.app,https://*.vercel.app"
 
     # Database (will be configured on Day 3)
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/ecolife_db"
@@ -55,3 +49,10 @@ class Settings(BaseSettings):
 
 # Create settings instance
 settings = Settings()
+
+
+def get_allowed_origins() -> List[str]:
+    """Parse comma-separated origins from environment variable"""
+    if isinstance(settings.ALLOWED_ORIGINS, str):
+        return [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",")]
+    return settings.ALLOWED_ORIGINS
