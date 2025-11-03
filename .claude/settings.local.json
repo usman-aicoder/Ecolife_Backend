@@ -39,7 +39,9 @@
       "Bash(heroku config:get:*)",
       "Bash(heroku ps:*)",
       "Bash(heroku releases:*)",
-      "Bash(heroku restart:*)"
+      "Bash(heroku restart:*)",
+      "Bash(timeout 5 heroku logs:*)",
+      "Bash(./venv/Scripts/pip:*)"
     ],
     "deny": [],
     "ask": []
