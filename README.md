@@ -1,0 +1,3 @@
+# ECOLIFE Backend
+
+Project documentation
