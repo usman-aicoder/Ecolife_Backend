@@ -15,11 +15,20 @@ from app.schemas.meal_plan import (
     MealPlanGenerateRequest,
     MealPlanResponse,
     MealPlanStatusResponse,
-    MealPlanListResponse
+    MealPlanListResponse,
+    UpdateMealPlanRequest,
+    SwapMealRequest,
+    MealAlternativeResponse,
+    MealDetail
 )
 from app.utils.dependencies import get_current_user
 from app.tasks.meal_plan import generate_meal_plan_task
-from app.services.meal_plan_generator import regenerate_meal_plan_for_user
+from app.services.meal_plan_generator import (
+    regenerate_meal_plan_for_user,
+    update_meal_plan,
+    swap_single_meal
+)
+from app.services.meal_plan_service import get_alternative_meals
 
 
 router = APIRouter(prefix="/meal-plans", tags=["Meal Plans"])
@@ -284,6 +293,156 @@ async def get_my_meal_plans(
         meal_plans=meal_plan_responses,
         total=total
     )
+
+
+@router.put("/{meal_plan_id}", response_model=MealPlanResponse)
+async def update_meal_plan_endpoint(
+    meal_plan_id: int,
+    request: UpdateMealPlanRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update an existing meal plan with edited meals.
+    """
+    try:
+        # Convert Pydantic models to dicts
+        updated_meals = [meal.model_dump() for meal in request.meals]
+
+        meal_plan = await update_meal_plan(
+            db=db,
+            meal_plan_id=meal_plan_id,
+            user_id=current_user.id,
+            updated_meals=updated_meals
+        )
+
+        # Calculate summary statistics
+        total_calories_week = sum(day.get("total_calories", 0) for day in meal_plan.meals)
+        total_carbon_week = sum(day.get("total_carbon", 0) for day in meal_plan.meals)
+        avg_calories_day = total_calories_week // 7 if total_calories_week else None
+
+        return MealPlanResponse(
+            id=meal_plan.id,
+            user_id=meal_plan.user_id,
+            status=meal_plan.status,
+            task_id=meal_plan.task_id,
+            meals=meal_plan.meals,
+            dietary_preference=meal_plan.dietary_preference,
+            calorie_target=meal_plan.calorie_target,
+            created_at=meal_plan.created_at,
+            completed_at=meal_plan.completed_at,
+            error_message=meal_plan.error_message,
+            total_calories_week=total_calories_week,
+            total_carbon_week=total_carbon_week,
+            avg_calories_day=avg_calories_day
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update meal plan: {str(e)}"
+        )
+
+
+@router.post("/{meal_plan_id}/swap-meal", response_model=MealPlanResponse)
+async def swap_meal_endpoint(
+    meal_plan_id: int,
+    request: SwapMealRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Swap a single meal in the meal plan.
+    """
+    try:
+        # Convert Pydantic model to dict
+        new_meal = request.new_meal.model_dump()
+
+        meal_plan = await swap_single_meal(
+            db=db,
+            meal_plan_id=meal_plan_id,
+            user_id=current_user.id,
+            day_index=request.day_index,
+            meal_type=request.meal_type,
+            new_meal=new_meal
+        )
+
+        # Calculate summary statistics
+        total_calories_week = sum(day.get("total_calories", 0) for day in meal_plan.meals)
+        total_carbon_week = sum(day.get("total_carbon", 0) for day in meal_plan.meals)
+        avg_calories_day = total_calories_week // 7 if total_calories_week else None
+
+        return MealPlanResponse(
+            id=meal_plan.id,
+            user_id=meal_plan.user_id,
+            status=meal_plan.status,
+            task_id=meal_plan.task_id,
+            meals=meal_plan.meals,
+            dietary_preference=meal_plan.dietary_preference,
+            calorie_target=meal_plan.calorie_target,
+            created_at=meal_plan.created_at,
+            completed_at=meal_plan.completed_at,
+            error_message=meal_plan.error_message,
+            total_calories_week=total_calories_week,
+            total_carbon_week=total_carbon_week,
+            avg_calories_day=avg_calories_day
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to swap meal: {str(e)}"
+        )
+
+
+@router.get("/alternatives", response_model=MealAlternativeResponse)
+async def get_meal_alternatives(
+    meal_type: str,
+    dietary_preference: str = "balanced",
+    exclude_names: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get alternative meals for swapping.
+
+    Args:
+        meal_type: Type of meal (breakfast, lunch, dinner)
+        dietary_preference: User's dietary preference
+        exclude_names: Comma-separated list of meal names to exclude
+    """
+    try:
+        # Parse exclude names
+        exclude_list = []
+        if exclude_names:
+            exclude_list = [name.strip() for name in exclude_names.split(',')]
+
+        alternatives = get_alternative_meals(
+            meal_type=meal_type,
+            dietary_preference=dietary_preference,
+            exclude_names=exclude_list
+        )
+
+        # Convert to MealDetail models
+        meal_details = [MealDetail(**meal) for meal in alternatives]
+
+        return MealAlternativeResponse(
+            alternatives=meal_details,
+            meal_type=meal_type,
+            count=len(meal_details)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get alternatives: {str(e)}"
+        )
 
 
 @router.delete("/{meal_plan_id}", status_code=status.HTTP_204_NO_CONTENT)

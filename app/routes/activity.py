@@ -53,30 +53,48 @@ async def add_steps(
     result = await db.execute(stmt)
     activity = result.scalar_one_or_none()
 
+    # Determine if this is a time-based activity
+    time_based_activities = ["cycling", "gym", "swimming", "football", "other_sports"]
+    is_time_based = request.activity_type in time_based_activities
+
     if activity:
         # Update existing record
-        activity.steps = request.steps
+        activity.steps = request.steps if not is_time_based else 0
         activity.activity_type = request.activity_type
+        activity.duration_minutes = request.duration_minutes if request.duration_minutes else 0.0
         activity.updated_at = datetime.utcnow()
 
-        # Estimate calories burned (rough estimate: 0.04 calories per step)
-        activity.calories_burned = round(request.steps * 0.04, 2)
-
-        message = f"Steps updated to {request.steps}"
+        # Estimate calories burned
+        if is_time_based and request.duration_minutes:
+            # Rough estimate: 5-10 calories per minute depending on activity
+            activity.calories_burned = round(request.duration_minutes * 7, 2)
+            message = f"Activity updated: {request.duration_minutes} minutes of {request.activity_type}"
+        else:
+            # For step-based: 0.04 calories per step
+            activity.calories_burned = round(request.steps * 0.04, 2)
+            message = f"Steps updated to {request.steps}"
     else:
         # Create new record
-        calories = round(request.steps * 0.04, 2)
+        if is_time_based and request.duration_minutes:
+            calories = round(request.duration_minutes * 7, 2)
+            duration = request.duration_minutes
+            steps = 0
+            message = f"Added {duration} minutes of {request.activity_type}"
+        else:
+            calories = round(request.steps * 0.04, 2)
+            duration = 0.0
+            steps = request.steps
+            message = f"Added {steps} steps"
 
         activity = ActivityData(
             user_id=current_user.id,
             date=request.date,
-            steps=request.steps,
+            steps=steps,
             activity_type=request.activity_type,
             calories_burned=calories,
-            duration_minutes=0.0  # Can be calculated later if needed
+            duration_minutes=duration
         )
         db.add(activity)
-        message = f"Added {request.steps} steps"
 
     await db.commit()
     await db.refresh(activity)

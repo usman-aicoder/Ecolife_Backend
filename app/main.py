@@ -6,7 +6,7 @@ FastAPI application for optimizing diet and habits for better health and lower c
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings, get_allowed_origins
-from app.routes import auth, onboarding, dashboard, analytics, meal_plan, meal_consumption, activity
+from app.routes import auth, onboarding, dashboard, analytics, meal_plan, meal_consumption, activity, health_insights
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -34,6 +34,7 @@ app.include_router(analytics.router)
 app.include_router(meal_plan.router)
 app.include_router(meal_consumption.router)
 app.include_router(activity.router)
+app.include_router(health_insights.router)
 
 
 # Health check endpoint

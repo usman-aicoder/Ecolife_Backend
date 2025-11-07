@@ -89,3 +89,23 @@ class MealPlanListResponse(BaseModel):
     """List of meal plans for a user"""
     meal_plans: List[MealPlanResponse]
     total: int
+
+
+# Meal Editing Schemas
+class UpdateMealPlanRequest(BaseModel):
+    """Request to update an existing meal plan"""
+    meals: List[DayMeals]
+
+
+class SwapMealRequest(BaseModel):
+    """Request to swap a single meal in the plan"""
+    day_index: int = Field(ge=0, le=6, description="Day index (0-6)")
+    meal_type: str = Field(description="Meal type: breakfast, lunch, or dinner")
+    new_meal: MealDetail
+
+
+class MealAlternativeResponse(BaseModel):
+    """Response with alternative meals for swapping"""
+    alternatives: List[MealDetail]
+    meal_type: str
+    count: int

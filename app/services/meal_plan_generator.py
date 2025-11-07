@@ -123,3 +123,127 @@ async def regenerate_meal_plan_for_user(
     await db.refresh(meal_plan)
 
     return meal_plan
+
+
+async def update_meal_plan(
+    db: AsyncSession,
+    meal_plan_id: int,
+    user_id: int,
+    updated_meals: List[Dict[str, Any]]
+) -> MealPlan:
+    """
+    Update an existing meal plan with edited meals.
+    Backs up original meals if this is the first edit.
+
+    Args:
+        db: Database session
+        meal_plan_id: ID of the meal plan to update
+        user_id: User ID (for authorization)
+        updated_meals: Updated 7-day meal plan data
+
+    Returns:
+        Updated MealPlan object
+    """
+    from sqlalchemy import select
+
+    # Fetch the meal plan
+    result = await db.execute(
+        select(MealPlan).where(
+            MealPlan.id == meal_plan_id,
+            MealPlan.user_id == user_id
+        )
+    )
+    meal_plan = result.scalar_one_or_none()
+
+    if not meal_plan:
+        raise ValueError(f"Meal plan {meal_plan_id} not found or unauthorized")
+
+    # Backup original meals if this is the first edit
+    if not meal_plan.customized and meal_plan.meals:
+        meal_plan.original_meals = meal_plan.meals
+
+    # Update the meals
+    meal_plan.meals = updated_meals
+    meal_plan.customized = True
+    meal_plan.edited_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(meal_plan)
+
+    return meal_plan
+
+
+async def swap_single_meal(
+    db: AsyncSession,
+    meal_plan_id: int,
+    user_id: int,
+    day_index: int,
+    meal_type: str,
+    new_meal: Dict[str, Any]
+) -> MealPlan:
+    """
+    Swap a single meal in the meal plan.
+
+    Args:
+        db: Database session
+        meal_plan_id: ID of the meal plan
+        user_id: User ID (for authorization)
+        day_index: Day index (0-6)
+        meal_type: Type of meal (breakfast, lunch, dinner)
+        new_meal: New meal data
+
+    Returns:
+        Updated MealPlan object
+    """
+    from sqlalchemy import select
+
+    # Fetch the meal plan
+    result = await db.execute(
+        select(MealPlan).where(
+            MealPlan.id == meal_plan_id,
+            MealPlan.user_id == user_id
+        )
+    )
+    meal_plan = result.scalar_one_or_none()
+
+    if not meal_plan:
+        raise ValueError(f"Meal plan {meal_plan_id} not found or unauthorized")
+
+    if not meal_plan.meals or day_index < 0 or day_index >= len(meal_plan.meals):
+        raise ValueError(f"Invalid day index: {day_index}")
+
+    if meal_type not in ["breakfast", "lunch", "dinner"]:
+        raise ValueError(f"Invalid meal type: {meal_type}")
+
+    # Backup original meals if this is the first edit
+    if not meal_plan.customized and meal_plan.meals:
+        meal_plan.original_meals = meal_plan.meals[:]
+
+    # Swap the meal
+    meals_data = meal_plan.meals[:]  # Create a copy
+    old_meal = meals_data[day_index][meal_type]
+    meals_data[day_index][meal_type] = new_meal
+
+    # Recalculate daily totals
+    day_meals = meals_data[day_index]
+    day_meals["total_calories"] = (
+        day_meals["breakfast"]["calories"] +
+        day_meals["lunch"]["calories"] +
+        day_meals["dinner"]["calories"]
+    )
+    day_meals["total_carbon"] = round(
+        day_meals["breakfast"]["carbon_footprint"] +
+        day_meals["lunch"]["carbon_footprint"] +
+        day_meals["dinner"]["carbon_footprint"],
+        2
+    )
+
+    # Update the meal plan
+    meal_plan.meals = meals_data
+    meal_plan.customized = True
+    meal_plan.edited_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(meal_plan)
+
+    return meal_plan

@@ -366,3 +366,40 @@ async def generate_7_day_meal_plan(
         meal_plan.append(day_meals)
 
     return meal_plan
+
+
+def get_alternative_meals(
+    meal_type: str,
+    dietary_preference: str = "balanced",
+    exclude_names: List[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    Get alternative meals for swapping.
+
+    Args:
+        meal_type: Type of meal (breakfast, lunch, dinner)
+        dietary_preference: User's dietary preference
+        exclude_names: List of meal names to exclude
+
+    Returns:
+        List of alternative meal options
+    """
+    exclude_names = exclude_names or []
+    dietary_preference = dietary_preference.lower()
+
+    # Get meal options for the diet type
+    if dietary_preference not in MEAL_DATABASE:
+        dietary_preference = "balanced"
+
+    meal_options = MEAL_DATABASE[dietary_preference]
+
+    # Filter by meal type and exclude specified meals
+    if meal_type not in meal_options:
+        return []
+
+    alternatives = [
+        meal for meal in meal_options[meal_type]
+        if meal["name"] not in exclude_names
+    ]
+
+    return alternatives

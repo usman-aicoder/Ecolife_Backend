@@ -3,7 +3,7 @@ MealPlan model for storing user meal plans.
 Each meal plan contains 7 days of meals (breakfast, lunch, dinner).
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
@@ -25,6 +25,11 @@ class MealPlan(Base):
     # Generation parameters
     dietary_preference = Column(String(100), nullable=True)
     calorie_target = Column(Integer, nullable=True)
+
+    # Editing fields
+    customized = Column(Boolean, default=False, nullable=False)  # User has edited this plan
+    original_meals = Column(JSON, nullable=True)  # Backup of original meals before edits
+    edited_at = Column(DateTime(timezone=True), nullable=True)  # Last edit timestamp
 
     # Error handling
     error_message = Column(Text, nullable=True)

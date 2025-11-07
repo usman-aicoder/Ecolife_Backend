@@ -41,10 +41,11 @@ class ActivityDataResponse(ActivityDataBase):
 
 
 class AddStepsRequest(BaseModel):
-    """Schema for adding daily steps."""
+    """Schema for adding daily steps or activity duration."""
     date: date_type = Field(..., description="Date of the activity")
     steps: int = Field(..., ge=0, le=100000, description="Number of steps")
     activity_type: str = Field(default="walking", description="Type of activity")
+    duration_minutes: Optional[float] = Field(None, ge=0, description="Duration in minutes for time-based activities")
 
 
 class AddStepsResponse(BaseModel):
