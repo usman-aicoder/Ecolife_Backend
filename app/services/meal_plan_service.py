@@ -288,6 +288,8 @@ MEAL_DATABASE["balanced"] = {
 # Map other diet types
 MEAL_DATABASE["pescatarian"] = MEAL_DATABASE["vegetarian"]  # Can be enhanced with fish meals
 MEAL_DATABASE["flexitarian"] = MEAL_DATABASE["balanced"]
+MEAL_DATABASE["non-vegetarian"] = MEAL_DATABASE["omnivore"]  # Map non-vegetarian to omnivore
+MEAL_DATABASE["other"] = MEAL_DATABASE["balanced"]  # Map other to balanced
 
 
 async def generate_7_day_meal_plan(
